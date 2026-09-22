@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangGraph Travel Planner | Autonomous Multi-Agent System</title>
+    <meta name="description" content="Intelligent Travel Planning Multi-Agent System built with LangGraph, FastAPI, and real-time streaming. Coordinates Supervisor, Destination, Itinerary, Accommodation, and Transport agents.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Interactive Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+    <!-- Ambient Background Glows -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <!-- Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">WanderGraph <span class="badge-langgraph">LangGraph Multi-Agent</span></div>
+                    <div class="brand-subtitle">Autonomous Travel Intelligence Workflow</div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div id="connectionStatus" class="status-pill status-connected">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Engine Ready</span>
+                </div>
+                <button id="btnSavedPlans" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Saved Trips (<span id="savedCountBadge">0</span>)
+                </button>
+                <button id="btnArchitecture" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Architecture
+                </button>
+                <button id="btnSettings" class="btn btn-icon" title="Settings & API Keys">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-layout">
+        <!-- Multi-Agent Live Pipeline Visualizer -->
+        <section class="agent-pipeline-section glass-panel">
+            <div class="pipeline-header">
+                <div class="pipeline-title">
+                    <span class="pulse-indicator"></span>
+                    <h3>LangGraph Multi-Agent Orchestration Pipeline</h3>
+                </div>
+                <div class="pipeline-controls">
+                    <button id="toggleLogsBtn" class="btn btn-xs btn-outline">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                        <span id="logToggleLabel">Show Agent Thought Stream</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Nodes Grid -->
+            <div class="agent-nodes-container">
+                <!-- Supervisor -->
+                <div class="agent-card" id="agent-supervisor">
+                    <div class="agent-icon-wrap icon-supervisor">
+                        🧠
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Supervisor Agent</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Analyzes intent & coordinates agents</div>
+                </div>
+
+                <div class="agent-connector">➔</div>
+
+                <!-- Destination -->
+                <div class="agent-card" id="agent-destination">
+                    <div class="agent-icon-wrap icon-dest">
+                        🔍
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Destination Research</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Weather, safety, sights & culture</div>
+                </div>
+
+                <div class="agent-connector">➔</div>
+
+                <!-- Itinerary -->
+                <div class="agent-card" id="agent-itinerary">
+                    <div class="agent-icon-wrap icon-itin">
+                        🗓️
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Itinerary Planner</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Day-wise schedule & geographic flow</div>
+                </div>
+
+                <div class="agent-connector">➔</div>
+
+                <!-- Accommodation -->
+                <div class="agent-card" id="agent-accommodation">
+                    <div class="agent-icon-wrap icon-hotel">
+                        🏨
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Accommodation Agent</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Curates stays matching budget tier</div>
+                </div>
+
+                <div class="agent-connector">➔</div>
+
+                <!-- Transport -->
+                <div class="agent-card" id="agent-transport">
+                    <div class="agent-icon-wrap icon-flight">
+                        ✈️
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Transport Booking</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Flights, transfers & transit passes</div>
+                </div>
+
+                <div class="agent-connector">➔</div>
+
+                <!-- Aggregator -->
+                <div class="agent-card" id="agent-aggregator">
+                    <div class="agent-icon-wrap icon-agg">
+                        💬
+                    </div>
+                    <div class="agent-info">
+                        <div class="agent-role">Response Aggregator</div>
+                        <div class="agent-status-badge status-idle">Idle</div>
+                    </div>
+                    <div class="agent-desc">Synthesizes final master travel plan</div>
+                </div>
+            </div>
+
+            <!-- Agent Thought Stream (Terminal/Console View) -->
+            <div id="agentThoughtConsole" class="thought-console">
+                <div class="console-topbar">
+                    <div class="console-dots">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                    </div>
+                    <div class="console-title">Live Agent State & Decision Log</div>
+                    <div class="console-tools">
+                        <button id="clearLogsBtn" class="btn-clean" title="Clear logs">Clear</button>
+                    </div>
+                </div>
+                <div id="thoughtLogsList" class="console-body">
+                    <div class="log-line log-system">
+                        <span class="log-time">[System]</span>
+                        <span class="log-msg">Multi-Agent graph compiled and ready. Submit your trip details below.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two Column Main Area: Planner Form & Plan Output -->
+        <div class="content-grid">
+            <!-- Left Column: Trip Request Form -->
+            <aside class="planner-sidebar glass-panel">
+                <div class="sidebar-header">
+                    <h2>Design Your Trip</h2>
+                    <p>Enter your dream travel parameters for the LangGraph multi-agent team.</p>
+                </div>
+
+                <!-- Quick Destination Presets -->
+                <div class="form-group">
+                    <label class="form-label">Quick Presets</label>
+                    <div class="preset-chips">
+                        <button type="button" class="chip-preset" data-dest="Tokyo, Japan" data-origin="New York" data-style="Culture & Food" data-days="5" data-budget="Moderate">🇯🇵 Tokyo (5d)</button>
+                        <button type="button" class="chip-preset" data-dest="Paris, France" data-origin="London" data-style="Art & Romance" data-days="4" data-budget="Luxury">🇫🇷 Paris (4d)</button>
+                        <button type="button" class="chip-preset" data-dest="Rome, Italy" data-origin="Chicago" data-style="Ancient History" data-days="6" data-budget="Moderate">🇮🇹 Rome (6d)</button>
+                        <button type="button" class="chip-preset" data-dest="Bali, Indonesia" data-origin="Sydney" data-style="Wellness & Beaches" data-days="7" data-budget="Budget">🇮🇩 Bali (7d)</button>
+                    </div>
+                </div>
+
+                <form id="travelPlanForm" class="planner-form">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="destinationInput" class="form-label">Destination City / Country *</label>
+                            <input type="text" id="destinationInput" class="form-control" placeholder="e.g. Tokyo, Japan" value="Tokyo, Japan" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="originInput" class="form-label">Departure Origin</label>
+                            <input type="text" id="originInput" class="form-control" placeholder="e.g. New York, USA" value="New York">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="durationDays" class="form-label">Trip Duration (Days): <span id="durationVal" class="highlight-val">5 Days</span></label>
+                            <input type="range" id="durationDays" min="1" max="14" value="5" class="range-slider">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="travelersCount" class="form-label">Travelers</label>
+                            <select id="travelersCount" class="form-control">
+                                <option value="1">Solo Traveler (1)</option>
+                                <option value="2" selected>Couple / Pair (2)</option>
+                                <option value="4">Small Group (4)</option>
+                                <option value="6">Family (6)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Budget Tier</label>
+                        <div class="budget-options">
+                            <label class="budget-card">
+                                <input type="radio" name="budgetTier" value="Budget">
+                                <div class="budget-content">
+                                    <div class="budget-title">Budget</div>
+                                    <div class="budget-desc">Hostels & Smart transit</div>
+                                </div>
+                            </label>
+                            <label class="budget-card selected">
+                                <input type="radio" name="budgetTier" value="Moderate" checked>
+                                <div class="budget-content">
+                                    <div class="budget-title">Moderate</div>
+                                    <div class="budget-desc">Comfort & Great value</div>
+                                </div>
+                            </label>
+                            <label class="budget-card">
+                                <input type="radio" name="budgetTier" value="Luxury">
+                                <div class="budget-content">
+                                    <div class="budget-title">Luxury</div>
+                                    <div class="budget-desc">5-star & Premier transit</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="travelStyle" class="form-label">Travel Style & Vibe</label>
+                        <select id="travelStyle" class="form-control">
+                            <option value="Culture & Sightseeing" selected>Culture & Iconic Sightseeing</option>
+                            <option value="Foodie & Culinary Delights">Foodie & Culinary Discoveries</option>
+                            <option value="Adventure & Active Outdoor">Adventure & Active Outdoors</option>
+                            <option value="Relaxing & Wellness Retreat">Relaxation & Spa Retreat</option>
+                            <option value="Romantic & Scenic Escape">Romantic & Scenic Escape</option>
+                            <option value="Family Friendly Fun">Family Friendly & Balanced</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Interests (Select multiple)</label>
+                        <div class="interests-grid" id="interestsContainer">
+                            <label class="interest-chip active"><input type="checkbox" value="Historic Sights" checked> 🏛️ Sights</label>
+                            <label class="interest-chip active"><input type="checkbox" value="Local Food" checked> 🍜 Street Food</label>
+                            <label class="interest-chip active"><input type="checkbox" value="Art & Museums" checked> 🎨 Art</label>
+                            <label class="interest-chip"><input type="checkbox" value="Nature & Parks"> 🌳 Parks</label>
+                            <label class="interest-chip"><input type="checkbox" value="Photography"> 📸 Photography</label>
+                            <label class="interest-chip"><input type="checkbox" value="Nightlife"> 🍸 Nightlife</label>
+                            <label class="interest-chip"><input type="checkbox" value="Shopping"> 🛍️ Shopping</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialReqs" class="form-label">Special Requests (Optional)</label>
+                        <textarea id="specialReqs" class="form-control" rows="2" placeholder="e.g. Vegetarian dining preferred, avoid overly steep stairs, interested in vintage records..."></textarea>
+                    </div>
+
+                    <button type="submit" id="generatePlanBtn" class="btn btn-primary btn-block btn-lg">
+                        <span class="btn-sparkle">✨</span>
+                        <span id="btnText">Launch LangGraph Multi-Agent Team</span>
+                        <div class="spinner-border hidden" id="btnSpinner"></div>
+                    </button>
+                </form>
+            </aside>
+
+            <!-- Right Column: Interactive Plan Display -->
+            <section class="plan-display-area">
+                <!-- Welcome Empty State -->
+                <div id="emptyPlanState" class="empty-state glass-panel">
+                    <div class="empty-icon">🗺️</div>
+                    <h2>Autonomous Multi-Agent Travel Planner</h2>
+                    <p>Enter your destination and preferences on the left, then click <strong>Launch LangGraph Multi-Agent Team</strong>.</p>
+                    <div class="features-row">
+                        <div class="feature-item">
+                            <div class="feat-icon">🧠</div>
+                            <h4>Supervisor Routing</h4>
+                            <p>Hierarchical decision graph orchestrates domain specialists</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon">🌤️</div>
+                            <h4>Live APIs</h4>
+                            <p>Real-time Open-Meteo weather & OpenStreetMap geocoding</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon">⚡</div>
+                            <h4>Live WebSockets</h4>
+                            <p>Real-time agent thoughts and state streaming straight to UI</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Plan Container (Hidden initially) -->
+                <div id="planContentContainer" class="plan-container glass-panel hidden">
+                    <!-- Plan Hero Banner -->
+                    <div class="plan-hero">
+                        <div class="hero-text">
+                            <div class="hero-badges">
+                                <span class="badge badge-destination" id="heroDestination">Tokyo, Japan</span>
+                                <span class="badge badge-duration" id="heroDuration">5 Days</span>
+                                <span class="badge badge-budget" id="heroBudget">Moderate Tier</span>
+                                <span class="badge badge-travelers" id="heroTravelers">2 Travelers</span>
+                            </div>
+                            <h1 id="heroTitle">5-Day Tokyo Cultural & Culinary Odyssey</h1>
+                            <p class="hero-summary" id="heroSummary">Executive summary of synthesized multi-agent travel plan...</p>
+                        </div>
+                        <div class="hero-actions">
+                            <button id="btnPrintPlan" class="btn btn-secondary" title="Print or Save PDF">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                Print / PDF
+                            </button>
+                            <button id="btnCopyMarkdown" class="btn btn-secondary" title="Copy Markdown">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy Markdown
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <div class="plan-nav-tabs">
+                        <button class="tab-btn active" data-tab="tab-overview">🌟 Overview & Insights</button>
+                        <button class="tab-btn" data-tab="tab-itinerary">🗓️ Day-by-Day Itinerary</button>
+                        <button class="tab-btn" data-tab="tab-hotels">🏨 Stays & Lodging</button>
+                        <button class="tab-btn" data-tab="tab-transport">✈️ Flights & Transit</button>
+                        <button class="tab-btn" data-tab="tab-map">🗺️ Interactive Map</button>
+                        <button class="tab-btn" data-tab="tab-budget">💰 Budget & Costs</button>
+                        <button class="tab-btn" data-tab="tab-packing">🎒 Smart Packing</button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content-area">
+                        <!-- Tab 1: Overview & Insights -->
+                        <div id="tab-overview" class="tab-pane active">
+                            <div class="overview-grid">
+                                <!-- Weather Card -->
+                                <div class="card weather-card">
+                                    <div class="card-header">
+                                        <span class="card-icon">🌤️</span>
+                                        <h3>Live Weather Forecast</h3>
+                                    </div>
+                                    <div class="card-body" id="weatherContent">
+                                        <!-- Injected dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- Key Destination Metrics -->
+                                <div class="card metrics-card">
+                                    <div class="card-header">
+                                        <span class="card-icon">ℹ️</span>
+                                        <h3>Essential Destination Facts</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="fact-row">
+                                            <span class="fact-label">Currency:</span>
+                                            <span class="fact-val" id="factCurrency">JPY (¥)</span>
+                                        </div>
+                                        <div class="fact-row">
+                                            <span class="fact-label">Language:</span>
+                                            <span class="fact-val" id="factLanguage">Japanese / English</span>
+                                        </div>
+                                        <div class="fact-row">
+                                            <span class="fact-label">Safety Rating:</span>
+                                            <span class="fact-val badge-safe" id="factSafety">Exceptional (9.8/10)</span>
+                                        </div>
+                                        <div class="fact-row">
+                                            <span class="fact-label">Visa Info:</span>
+                                            <span class="fact-val" id="factVisa">Visa-free 90 days</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Cultural Etiquette -->
+                                <div class="card tips-card">
+                                    <div class="card-header">
+                                        <span class="card-icon">🎎</span>
+                                        <h3>Cultural Etiquette & Local Advice</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="custom-list" id="culturalTipsList">
+                                            <!-- Injected dynamically -->
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Top Attractions Highlight -->
+                                <div class="card sights-card">
+                                    <div class="card-header">
+                                        <span class="card-icon">📍</span>
+                                        <h3>Top Highlight Attractions</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="tag-cloud" id="topAttractionsCloud">
+                                            <!-- Injected dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Day-by-Day Itinerary -->
+                        <div id="tab-itinerary" class="tab-pane">
+                            <div class="itinerary-timeline" id="itineraryTimeline">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Accommodations -->
+                        <div id="tab-hotels" class="tab-pane">
+                            <div class="hotels-grid" id="hotelsGrid">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Transport & Transit -->
+                        <div id="tab-transport" class="tab-pane">
+                            <div class="transport-grid" id="transportGrid">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Tab 5: Interactive Map -->
+                        <div id="tab-map" class="tab-pane">
+                            <div class="map-wrapper">
+                                <div class="map-controls-bar">
+                                    <span class="map-caption">Interactive Map: Leaflet & OpenStreetMap coordinates for your itinerary highlights</span>
+                                </div>
+                                <div id="travelMap" class="leaflet-map-canvas"></div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 6: Budget & Costs -->
+                        <div id="tab-budget" class="tab-pane">
+                            <div class="budget-view-grid">
+                                <div class="card budget-summary-card">
+                                    <h3>Total Estimated Investment</h3>
+                                    <div class="big-cost-display" id="totalCostDisplay">$0.00</div>
+                                    <div class="per-person-sub" id="perPersonDisplay">($0.00 per traveler)</div>
+                                    <p class="budget-note">*Estimates include accommodation, flights/transit, meals, museum admissions & buffer.</p>
+                                </div>
+                                <div class="card budget-breakdown-card">
+                                    <h3>Itemized Expense Allocation</h3>
+                                    <div class="expense-bars" id="expenseBarsContainer">
+                                        <!-- Injected dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 7: Smart Packing Checklist -->
+                        <div id="tab-packing" class="tab-pane">
+                            <div class="card packing-card">
+                                <div class="card-header">
+                                    <h3>Weather-Adapted Packing Checklist</h3>
+                                    <span class="text-muted">Click items to mark them packed</span>
+                                </div>
+                                <div class="packing-list" id="packingChecklist">
+                                    <!-- Injected dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal: Saved Trips -->
+    <div class="modal-overlay hidden" id="savedPlansModal">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>Saved Travel Plans</h3>
+                <button class="modal-close" data-close="savedPlansModal">&times;</button>
+            </div>
+            <div class="modal-body" id="savedPlansList">
+                <div class="loading-state">Loading your trips...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Architecture Diagram -->
+    <div class="modal-overlay hidden" id="architectureModal">
+        <div class="modal-dialog modal-lg glass-panel">
+            <div class="modal-header">
+                <h3>System Architecture: LangGraph Multi-Agent Travel Planner</h3>
+                <button class="modal-close" data-close="architectureModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="arch-diagram-flow">
+                    <div class="arch-box arch-frontend">
+                        <div class="arch-tag">Frontend</div>
+                        <h4>Web UI (SPA)</h4>
+                        <p>Real-time WebSockets, Leaflet Maps, Responsive Glassmorphism</p>
+                    </div>
+                    <div class="arch-arrow">↕ REST & WebSockets</div>
+                    <div class="arch-box arch-backend">
+                        <div class="arch-tag">Backend API</div>
+                        <h4>FastAPI Server</h4>
+                        <p>SQLite Storage, LangSmith Tracing, Streaming Agent Runner</p>
+                    </div>
+                    <div class="arch-arrow">↕ Graph State</div>
+                    <div class="arch-box arch-langgraph">
+                        <div class="arch-tag">LangGraph Engine</div>
+                        <h4>Stateful Multi-Agent Orchestration</h4>
+                        <div class="arch-subgrid">
+                            <div class="sub-agent">🧠 Supervisor</div>
+                            <div class="sub-agent">🔍 Destination</div>
+                            <div class="sub-agent">🗓️ Itinerary</div>
+                            <div class="sub-agent">🏨 Accommodation</div>
+                            <div class="sub-agent">✈️ Transport</div>
+                            <div class="sub-agent">💬 Aggregator</div>
+                        </div>
+                    </div>
+                    <div class="arch-arrow">↕ Live Integrations</div>
+                    <div class="arch-box arch-tools">
+                        <div class="arch-tag">External Tools</div>
+                        <h4>Live & Fallback Tool APIs</h4>
+                        <p>Open-Meteo Live Weather, OpenStreetMap Nominatim, Flight & Hotel Search Engines</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Settings & API Keys -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>Settings & API Configuration</h3>
+                <button class="modal-close" data-close="settingsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-muted">
+                    Configure optional LLM API keys. If keys are omitted, the system seamlessly runs in autonomous simulation mode with real-time live tools!
+                </p>
+                <form id="settingsForm">
+                    <div class="form-group">
+                        <label for="cfgOpenAiKey" class="form-label">OpenAI API Key (Optional)</label>
+                        <input type="password" id="cfgOpenAiKey" class="form-control" placeholder="sk-...">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgGeminiKey" class="form-label">Google Gemini API Key (Optional)</label>
+                        <input type="password" id="cfgGeminiKey" class="form-control" placeholder="AIza...">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgGroqKey" class="form-label">Groq API Key (Optional)</label>
+                        <input type="password" id="cfgGroqKey" class="form-control" placeholder="gsk_...">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgWeatherKey" class="form-label">OpenWeatherMap Key (Optional, Open-Meteo is free)</label>
+                        <input type="password" id="cfgWeatherKey" class="form-control" placeholder="Leave empty for free Open-Meteo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="cfgLangsmith"> Enable LangSmith Observability & Tracing
+                        </label>
+                    </div>
+                    <div class="form-group hidden" id="langsmithKeyGroup">
+                        <label for="cfgLangsmithKey" class="form-label">LangSmith API Key</label>
+                        <input type="password" id="cfgLangsmithKey" class="form-control" placeholder="lsv2_pt_...">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <button type="button" class="btn btn-secondary" data-close="settingsModal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- App Scripts -->
+    <script src="/js/websocket.js"></script>
+    <script src="/js/map.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
