@@ -2,8 +2,6 @@
 
 An intelligent, autonomous travel planning multi-agent system built using **LangGraph**, **FastAPI**, and a **Modern Web UI**. The system coordinates a hierarchical network of specialized AI agents to generate personalized, day-by-day travel itineraries with real-time streaming, interactive maps, weather forecasts, hotel curation, and budget breakdowns.
 
-![Architecture Diagram](https://raw.githubusercontent.com/placeholder/architecture.png)
-
 ---
 
 ## 🏗️ Architecture Overview
